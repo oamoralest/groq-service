@@ -6,7 +6,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 
-from src.client import GroqClient
+# Import from the package instead of src
+from groq_service.client import GroqClient
 
 async def main():
     # Load environment variables
