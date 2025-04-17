@@ -35,7 +35,7 @@ class GroqClient:
     @property
     def available_models(self) -> list[str]:
         """Get list of available models."""
-        return ["llama2-70b-4096", "llama-3.3-70b-versatile"]
+        return ["llama-3.3-70b-versatile"]
     
     async def _check_rate_limit(self):
         """

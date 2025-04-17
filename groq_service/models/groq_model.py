@@ -1,6 +1,16 @@
 """
 Groq model implementation.
 """
+import asyncio
+import logging
+from typing import Dict, List, Optional, AsyncGenerator
+
+from groq import Groq
+from groq.types.chat import ChatCompletion, ChatCompletionChunk
+
+from ..types import ModelParameters, ModelResponse
+
+logger = logging.getLogger(__name__)
 
 class GroqModel:
     """
@@ -14,12 +24,13 @@ class GroqModel:
         Args:
             name: Name of the model to use
         """
-        if name not in ["llama2-70b-4096", "llama-3.3-70b-versatile"]:
+        if name not in ["llama-3.3-70b-versatile"]:
             raise ValueError(
                 f"Invalid model name: {name}. "
-                "Available models: llama2-70b-4096, llama-3.3-70b-versatile"
+                "Available models: llama-3.3-70b-versatile"
             )
         self.name = name
+        self.client = Groq()
 
     def _create_messages(self, prompt: str) -> List[Dict[str, str]]:
         """Convert prompt to messages format."""
@@ -31,11 +42,8 @@ class GroqModel:
         parameters: Optional[ModelParameters] = None
     ) -> ModelResponse:
         """Generate a completion for the given prompt."""
-        parameters = self._validate_parameters(parameters)
+        parameters = parameters or ModelParameters()
         messages = self._create_messages(prompt)
-        
-        # Apply rate limiting
-        await self.rate_limiter.acquire("completion")
         
         try:
             response: ChatCompletion = await asyncio.to_thread(
@@ -69,11 +77,8 @@ class GroqModel:
         parameters: Optional[ModelParameters] = None
     ) -> AsyncGenerator[str, None]:
         """Stream completions for the given prompt."""
-        parameters = self._validate_parameters(parameters)
+        parameters = parameters or ModelParameters()
         messages = self._create_messages(prompt)
-        
-        # Apply rate limiting
-        await self.rate_limiter.acquire("stream")
         
         try:
             # Create streaming response
@@ -95,7 +100,7 @@ class GroqModel:
             logger.error(f"Error during streaming: {str(e)}")
             raise
 
-    async def _async_iterate(self, stream):
+    async def _async_iterate(self, stream) -> AsyncGenerator[ChatCompletionChunk, None]:
         """Convert sync iterator to async iterator."""
         for item in stream:
             yield item
